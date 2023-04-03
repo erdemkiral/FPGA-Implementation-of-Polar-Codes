@@ -54,7 +54,6 @@ architecture Behavioral of top is
             clk            : in  std_logic;
             rx_i           : in  std_logic;
             addr           : in  integer range 0 to c_buffer_depth-1 := 0;
-            -- data_request   : in  std_logic;
             data_available : out std_logic;
             memory_out     : out std_logic_vector(c_buffer_data_length -1 downto 0)
     );
