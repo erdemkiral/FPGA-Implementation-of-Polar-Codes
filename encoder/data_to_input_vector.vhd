@@ -7,8 +7,8 @@ generic (
             data_length    : integer := 16
 );
 port ( 
-            clk 		   : in std_logic;
-            data_i 		   : in std_logic_vector(15 downto 0);
+            clk            : in std_logic;
+            data_i         : in std_logic_vector(15 downto 0);
             vector_en 	   : in std_logic;
             input_vector_o : out std_logic_vector(31 downto 0);
             vector_o_done  : out std_logic
