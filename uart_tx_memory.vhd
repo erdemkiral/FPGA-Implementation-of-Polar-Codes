@@ -7,12 +7,12 @@ USE std.textio.all;
 
 entity uart_tx_memory is
     generic(
-		c_clkfreq  		        : integer := 100_000_000;
-		c_baudrate 		        : integer := 115_200;
-		c_stopbitcount          : integer := 2;
+	c_clkfreq  		: integer := 100_000_000;
+	c_baudrate 		: integer := 115_200;
+	c_stopbitcount          : integer := 2;
         c_buffer_depth          : integer := 64;
         c_buffer_data_length    : integer := 32;
-        C_RAM_TYPE 		        : string 	:= "block"  
+        C_RAM_TYPE 		: string  := "block"  
 );
 port ( 
         clk            : in  std_logic;
