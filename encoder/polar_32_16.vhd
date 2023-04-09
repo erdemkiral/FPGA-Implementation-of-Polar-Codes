@@ -120,21 +120,21 @@ signal lay1_data_i	:  std_logic_vector(31 downto 0) := (others => '0');
 signal sys_en_i   	:   std_logic := '0';
 signal lay1_out   	:  std_logic_vector(31 downto 0) := (others => '0');
 -- LAYER 2
-signal lay2_data_i   :  std_logic_vector(c_datalength -1 downto 0) := (others => '0');
+signal lay2_data_i   :  std_logic_vector(code_length -1 downto 0) := (others => '0');
 signal lay2sys_en_i  :  std_logic := '0';
-signal lay2_out 	  :  std_logic_vector(c_datalength -1  downto 0) := (others => '0');
+signal lay2_out 	  :  std_logic_vector(code_length -1  downto 0) := (others => '0');
 --LAYER3
-signal lay3_data_i    :  std_logic_vector(c_datalength -1 downto 0) := (others => '0');
+signal lay3_data_i    :  std_logic_vector(code_length -1 downto 0) := (others => '0');
 signal lay3_sys_en_i  :  std_logic := '0';
-signal lay_3_data_o   :  std_logic_vector(c_datalength -1  downto 0) := (others => '0');
+signal lay_3_data_o   :  std_logic_vector(code_length -1  downto 0) := (others => '0');
 --LAYER4
-signal lay_4_data_i  :  std_logic_vector(c_datalength -1 downto 0) := (others => '0');
+signal lay_4_data_i  :  std_logic_vector(code_length -1 downto 0) := (others => '0');
 signal lay_4_sys_en  :  std_logic := '0';
-signal lay_4_data_o  :  std_logic_vector(c_datalength -1  downto 0) := (others => '0');
+signal lay_4_data_o  :  std_logic_vector(code_length -1  downto 0) := (others => '0');
 -- LAYER5
-signal lay_5_data_i :  std_logic_vector(c_datalength -1 downto 0) := (others => '0');
+signal lay_5_data_i :  std_logic_vector(code_length -1 downto 0) := (others => '0');
 signal lay_5_sys_en :  std_logic := '0';
-signal lay_5_data_o :  std_logic_vector(c_datalength -1  downto 0) := (others => '0');
+signal lay_5_data_o :  std_logic_vector(code_length -1  downto 0) := (others => '0');
 -------------------------------------------------------------------------------------
 
 -----------------PROGRAM SIGNALS------------------
@@ -254,7 +254,7 @@ end process  P_MAIN;
    
         u2 : n_bit_layer1 
             generic map (
-                c_datalength    => c_datalength, -- can be configured
+                c_datalength    => code_length, -- can be configured
                 c_layernumber1   => c_layer1number-- must stay as constant !!
         )
         port map ( 
@@ -267,7 +267,7 @@ end process  P_MAIN;
        
 	    u3 : n_bit_layer2 
             generic map (
-                c_datalength   => c_datalength,   -- can be configured
+                c_datalength   => code_length,   -- can be configured
                 c_layernumber2  => c_layer2number -- must stay as constant !!
          )
             port map ( 
@@ -282,7 +282,7 @@ end process  P_MAIN;
 		
 		u4 : n_bit_layer3 
             generic  map (
-              c_datalength   => c_datalength,    -- can be configured to 32 64 128 256 512 1024 
+              c_datalength   => code_length,    -- can be configured to 32 64 128 256 512 1024 
               c_layernumber3  => c_layer3number -- must stay as constant !!
           )
           port map  (
@@ -296,7 +296,7 @@ end process  P_MAIN;
           u5 : n_bit_layer4 
             generic map (
                         c_layernumber4 => c_layer4number,
-                        c_datalength  => c_datalength 
+                        c_datalength  => code_length 
                         
             )
             port map ( 
@@ -309,7 +309,7 @@ end process  P_MAIN;
 
             u6 : n_bit_layer5 
              generic map (
-                            c_datalength    => c_datalength,   -- can be configured
+                            c_datalength    => code_length,   -- can be configured
                             c_layernumber5   => c_layer5number -- must stay as constant !!
                 )
             port map (  
