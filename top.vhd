@@ -54,6 +54,7 @@ architecture Behavioral of top is
             clk            : in  std_logic;
             rx_i           : in  std_logic;
             addr           : in  integer range 0 to c_buffer_depth-1 := 0;
+            -- data_request   : in  std_logic;
             data_available : out std_logic;
             memory_out     : out std_logic_vector(c_buffer_data_length -1 downto 0)
     );
@@ -171,218 +172,217 @@ architecture Behavioral of top is
 begin
 
 
-    P_RX_AV : process (clk)
-    begin
-        if rising_edge(clk) then
-            
-            if  rx_data_available = '1' then
-                encode_i_wea <= '1';
-                input_packet_count <= input_packet_count + 1;
-            else 
-                input_packet_count <= input_packet_count;
-                encode_i_wea <= '0';
-            end if;
+		P_RX_AV : process (clk)
+		begin
+			if rising_edge(clk) then
+				
+				if  rx_data_available = '1' then
+					encode_i_wea <= '1';
+					input_packet_count <= input_packet_count + 1;
+				else 
+					input_packet_count <= input_packet_count;
+					encode_i_wea <= '0';
+				end if;
+		
+			end if;
+		end   process;
+		
+		process (clk)
+		begin
+			if rising_edge(clk) then
+		
+				if  encode_i_wea = '1' then
 
-        end if;
-    end process;
+					if input_packet_count = c_buffer_depth then
+						encode_data_vector_i <= rx_memory_out;
+						encode_en_i <= '1';
+						rx_data_addr <= 0;
+					else 
+						encode_data_vector_i <= rx_memory_out;
+						encode_en_i <= '1';
+						rx_data_addr <= rx_data_addr + 1;
+					end if;
+				else 
+					encode_data_vector_i <= rx_memory_out;
+					encode_en_i <= '0';
+					rx_data_addr <= rx_data_addr;
+				end if;
 
-    process (clk)
-    begin
-        if rising_edge(clk) then
+			end if;
+		end process;
+		
+		P_ENCODE_DONE_CHECK : process (clk)
+		begin
+			if rising_edge(clk) then
+		
+				if encode_polar_o_tick = '1' then
+					codeword_i <= encode_polar_o;
+					llr_i      <= symbol_out;
+					p_decode_en <= '1';
+				else 
+					p_decode_en <= '0';
+				end if;
+		
+			end if;
+		end process;
+		
+		process (clk)
+		begin
+			if rising_edge(clk) then
+		
+				if p_decode_en = '1' then
+					decode_en  <= '1';
+				else 
+					decode_en <= '0';
+				end if;
+				
+			end if;
+		end process;
+		
+		
+		P_DECODE_CHECK : process (clk) begin
+			if rising_edge(clk) then
+				
+				
+				if decode_op_done = '1' then
+					write_en <= '1';
+					decode_op_done_cntr <= decode_op_done_cntr + 1;                
+				else 
+					write_en <= '0';
+					decode_op_done_cntr <= decode_op_done_cntr;                
+				end if;
+		
+			end if;
+		end process;
+		
+		P_UART_TX_WRITE : process (clk)
+		begin
+			if rising_edge(clk) then
 
+				
+				if write_en = '1' then
 
-            if input_packet_count = c_buffer_depth then
-                    rx_data_addr <= 0;
-            else 
-                if  encode_i_wea = '1' then
-                    encode_data_vector_i <= rx_memory_out;
-                    encode_en_i <= '1';
-                    rx_data_addr <= rx_data_addr + 1;
-                else 
-                    encode_data_vector_i <= rx_memory_out;
-                    encode_en_i <= '0';
-                    rx_data_addr <= rx_data_addr;
-                end if;
-            end if;
-            
-        end if;
-    end process;
-
-    P_ENCODE_DONE_CHECK : process (clk)
-    begin
-        if rising_edge(clk) then
-
-            if encode_polar_o_tick = '1' then
-                codeword_i <= encode_polar_o;
-                llr_i      <= symbol_out;
-                p_decode_en <= '1';
-            else 
-                p_decode_en <= '0';
-            end if;
-
-        end if;
-    end process;
-
-    process (clk)
-    begin
-        if rising_edge(clk) then
-
-            if p_decode_en = '1' then
-                decode_en  <= '1';
-            else 
-                decode_en <= '0';
-            end if;
-            
-        end if;
-    end process;
-
-
-    P_DECODE_CHECK : process (clk) begin
-        if rising_edge(clk) then
-            
-            if decode_op_done = '1' then
-                write_en <= '1';
-                decode_op_done_cntr <= decode_op_done_cntr + 1;                
-            else 
-                write_en <= '0';
-                decode_op_done_cntr <= decode_op_done_cntr;                
-            end if;
-
-        end if;
-    end process;
-
-    P_UART_TX_WRITE : process (clk)
-    begin
-        if rising_edge(clk) then
-            
-            if write_en = '1' then
-
-                if w_addr = c_buffer_depth -1 then
-                    w_addr <= 0;
-                    data_i  <= estimate_data;
-                else 
-                    data_i  <= estimate_data;
-                    w_addr  <= w_addr + 1;
-                end if;
-
-            else 
-                data_i   <= estimate_data;
-                w_addr   <= w_addr;
-            end if;
-
-        end if;
-    end process;
-
-
-
-   TX : process (clk)
-    begin
-        if rising_edge(clk) then
-
-            if decode_op_done_cntr >= 1 then
-
-                if interrupt = '1' then
-                    tx_state_en <= '0';
-                    sent_counter <= sent_counter + 1;
-                else 
-
-                    if sent_counter >= input_packet_count then
-                        tx_state_en <= '0';
-                        sent_counter <= sent_counter;
-                    else 
-                        tx_state_en <= '1';
-                        sent_counter <= sent_counter;
-                    end if;
-
-                end if;
-       
-            end if;
-
-        end if;
-    end process;
-
-
-    urxmem :  uart_rx_large_buffer 
-        generic map (
-            clkfreq                => clkfreq             , 
-            baudrate               => baudrate            , 
-            c_buffer_depth         => c_buffer_depth      , 
-            c_buffer_data_length   => c_buffer_data_length
-    )
-    port map ( 
-            clk            => clk,
-            rx_i           => rx,
-            addr           => rx_data_addr     ,
-            -- data_request   => rx_data_request  ,
-            data_available => rx_data_available,
-            memory_out     => rx_memory_out    
-    );
-    
-
-    i_encoder : polar_32_16 
-        generic map (
-                code_length      => code_length   ,  -- default
-                data_length      => data_length   , 
-                c_layer1number   => c_layer1number, 
-                c_layer2number   => c_layer2number, 
-                c_layer3number   => c_layer3number, 
-                c_layer4number   => c_layer4number, 
-                c_layer5number   => c_layer5number
-        )
-        port map ( 
-                    clk             => clk,
-                    data_vector_i   => encode_data_vector_i,
-                    encode_en_i     => encode_en_i         ,
-                    polar_o         => encode_polar_o      ,
-                    polar_o_tick    => encode_polar_o_tick 
-        );
-
-
-    i_bpsk : bpsk_symbol_converter 
-        generic map (code_length  =>  code_length)
-        port map ( 
-                    codeword_i =>  codeword_i,
-                    symbol_out =>  symbol_out 
-        );
-
-
-
-
-    i_decoder : n_32_fsm 
-        generic map (
-            bit_range			=> bit_range,
-            data_data           => data_data    ,				 
-            frozen_data         => frozen_data  ,				        
-            data_frozen         => data_frozen  ,				 
-            frozen_frozen       => frozen_frozen			
-        )
-        port map ( 
-                    clk                =>  clk,
-                    decode_en          =>  decode_en,
-                    llr_i              =>   llr_i         ,
-                    estimate_data      => estimate_data ,
-                    decode_op_done     =>  decode_op_done
-        );
-
-
-
-    u_txmem :  uart_tx_memory 
-        generic map(
-            c_clkfreq  		        =>  c_clkfreq  		    ,
-            c_baudrate 		        =>  c_baudrate 		    ,
-            c_stopbitcount          =>  c_stopbitcount      ,
-            c_buffer_depth          =>  c_buffer_depth      ,
-            c_buffer_data_length    =>  c_buffer_data_length,
-            C_RAM_TYPE 		        =>  C_RAM_TYPE 		     
-    )
-    port map ( 
-            clk                 => clk          ,
-            data_i              => data_i       ,
-            w_addr              => w_addr       ,
-            write_en            => write_en     ,
-            tx_state_en         => tx_state_en  ,
-            tx                  => tx_o         ,
-            interrupt           => interrupt      
-    );
+					if w_addr = c_buffer_depth -1 then
+						w_addr <= 0;
+						data_i  <= estimate_data;
+					else 
+						data_i  <= estimate_data;
+						w_addr  <= w_addr + 1;
+					end if;
+	
+				else 
+					data_i   <= estimate_data;
+					w_addr   <= w_addr;
+				end if;
+	
+			end if;
+		end process;
+		
+		
+		
+		TX : process (clk)
+		begin
+			if rising_edge(clk) then
+		
+				if  decode_op_done_cntr >= 1 then
+		
+					if interrupt = '1' then
+						tx_state_en <= '0';
+						sent_counter <= sent_counter + 1;
+					else 
+		
+						if sent_counter >= input_packet_count then
+							tx_state_en <= '0';
+							sent_counter <= sent_counter;
+						else 
+							tx_state_en <= '1';
+							sent_counter <= sent_counter;
+						end if;
+		
+					end if;
+			
+				end if;
+		
+			end if;
+		end process;
+		
+		
+		urxmem :  uart_rx_large_buffer 
+			generic map (
+				clkfreq                => clkfreq             , 
+				baudrate               => baudrate            , 
+				c_buffer_depth         => c_buffer_depth      , 
+				c_buffer_data_length   => c_buffer_data_length
+		)
+		port map ( 
+				clk            => clk,
+				rx_i           => rx,
+				addr           => rx_data_addr     ,
+				data_available => rx_data_available,
+				memory_out     => rx_memory_out    
+		);
+		
+		
+		i_encoder : polar_32_16 
+			generic map (
+					code_length      => code_length   ,  -- default
+					data_length      => data_length   , 
+					c_layer1number   => c_layer1number, 
+					c_layer2number   => c_layer2number, 
+					c_layer3number   => c_layer3number, 
+					c_layer4number   => c_layer4number, 
+					c_layer5number   => c_layer5number
+			)
+			port map ( 
+						clk             => clk,
+						data_vector_i   => encode_data_vector_i,
+						encode_en_i     => encode_en_i         ,
+						polar_o         => encode_polar_o      ,
+						polar_o_tick    => encode_polar_o_tick 
+			);
+		
+		
+		i_bpsk : bpsk_symbol_converter 
+			generic map (code_length  =>  code_length)
+			port map ( 
+						codeword_i =>  codeword_i,
+						symbol_out =>  symbol_out 
+			);
+		
+		
+		i_decoder : n_32_fsm 
+			generic map (
+				bit_range			=> bit_range,
+				data_data           => data_data    ,				 
+				frozen_data         => frozen_data  ,				        
+				data_frozen         => data_frozen  ,				 
+				frozen_frozen       => frozen_frozen			
+			)
+			port map ( 
+						clk                =>  clk,
+						decode_en          =>  decode_en,
+						llr_i              =>   llr_i         ,
+						estimate_data      => estimate_data ,
+						decode_op_done     =>  decode_op_done
+			);
+		
+		u_txmem :  uart_tx_memory 
+			generic map(
+				c_clkfreq  		        =>  c_clkfreq  		    ,
+				c_baudrate 		        =>  c_baudrate 		    ,
+				c_stopbitcount          =>  c_stopbitcount      ,
+				c_buffer_depth          =>  c_buffer_depth      ,
+				c_buffer_data_length    =>  c_buffer_data_length,
+				C_RAM_TYPE 		        =>  C_RAM_TYPE 		     
+		)
+		port map ( 
+				clk                 => clk          ,
+				data_i              => data_i       ,
+				w_addr              => w_addr       ,
+				write_en            => write_en     ,
+				tx_state_en         => tx_state_en  ,
+				tx                  => tx_o         ,
+				interrupt           => interrupt      
+		);
 
 end Behavioral;
