@@ -7,18 +7,18 @@ use work.my_pkg.all;
 
 
 entity g_2_block is
-generic(
-		leaf_node_type  : std_logic_vector(1 downto 0) := "00";
-		bit_range       : integer := 64-- "00" frozen position & frozen position 
-		-- leaf_node_type  : std_logic_vector(1 downto 0) := "01"				-- "01" frozen position & data position 
-		-- leaf_node_type  : std_logic_vector(1 downto 0) := "10"				-- "10"  data           & frozen position 
-		-- leaf_node_type  : std_logic_vector(1 downto 0) := "11"				-- "11"  data position   & data position 
+generic(	
+		bit_range       : integer := 64;
+		leaf_node_type  : std_logic_vector(1 downto 0) := "00" 		-- "00" frozen position & frozen position 
+		-- leaf_node_type  : std_logic_vector(1 downto 0) := "01"	-- "01" frozen position & data position 
+		-- leaf_node_type  : std_logic_vector(1 downto 0) := "10"	-- "10"  data           & frozen position 
+		-- leaf_node_type  : std_logic_vector(1 downto 0) := "11"	-- "11"  data position   & data position 
 );
 port ( 
 		data_1_i     : in integer range -bit_range to bit_range;
 		data_2_i     : in integer range -bit_range to bit_range;
 		transfer_o   : out std_logic_vector(1 downto 0);
-		layer_o 	 : out int_arr(1 downto 0);
+		layer_o      : out int_arr(1 downto 0);
 		leaf_node_o  : out std_logic_vector(1 downto 0)
 );
 end g_2_block;
