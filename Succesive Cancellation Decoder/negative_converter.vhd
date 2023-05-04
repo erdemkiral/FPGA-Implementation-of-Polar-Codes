@@ -10,7 +10,7 @@ generic (
 			bit_range       : integer := 64
 	);
 port (
-		signed_in 		  : in   integer range -bit_range to bit_range;
+		signed_in 	  : in   integer range -bit_range to bit_range;
 		negative_out	  : out  integer range -bit_range to bit_range 
  );
 end negative_converter;
