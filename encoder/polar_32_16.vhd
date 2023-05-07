@@ -157,18 +157,19 @@ P_MAIN : process (clk) begin
 
         when S_IDLE =>
 
-			vector_en <= '0';
-			polar_o_tick <= '0';
-			process_en <= '0';
-			internalcntr <= 0;
-			polar_o <= (others => '0');
-            if encode_en_i = '1' then
-                data_i <= data_vector_i;
-                vector_en <= '1';
-                state <= S_DATA;
-            else 
-                state <= S_IDLE;               
-            end if;
+		vector_en <= '0';
+		polar_o_tick <= '0';
+		process_en <= '0';
+		internalcntr <= 0;
+		polar_o <= (others => '0');
+
+		    if encode_en_i = '1' then
+			data_i <= data_vector_i;
+			vector_en <= '1';
+			state <= S_DATA;
+		    else 
+			state <= S_IDLE;               
+		    end if;
         
         when S_DATA =>
 
