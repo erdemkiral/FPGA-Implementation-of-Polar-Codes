@@ -212,13 +212,13 @@ P_MAIN : process (clk) begin
                     internalcntr <= 4;
 
                 elsif internalcntr = 4 then
-					lay_5_sys_en <= '1';
+		    lay_5_sys_en <= '1';
                     lay_5_data_i <= lay_4_data_o;
-					internalcntr <= 5;
+		    internalcntr <= 5;
 					
-				elsif internalcntr = 5 then
-					polar_o <= lay_5_data_o;
-					polar_o_tick <= '1';
+		elsif internalcntr = 5 then
+			polar_o <= lay_5_data_o;
+			polar_o_tick <= '1';
                     state <= S_DONE;
                 end if;
 
