@@ -4,15 +4,13 @@ use IEEE.STD_LOGIC_1164.ALL;
 
 entity polar_32_16 is
 generic (
-        code_length    : integer := 32; -- default
-        data_length    : integer := 16;
-		
+        code_length      : integer := 32; -- default
+        data_length      : integer := 16;
         c_layer1number   : integer := 1;
         c_layer2number   : integer := 2;
         c_layer3number   : integer := 3;
         c_layer4number   : integer := 4;
         c_layer5number   : integer := 5
-
 );
 port ( 
             clk             : in  std_logic;
@@ -157,25 +155,26 @@ P_MAIN : process (clk) begin
 
         when S_IDLE =>
 
-		vector_en <= '0';
-		polar_o_tick <= '0';
-		process_en <= '0';
-		internalcntr <= 0;
-		polar_o <= (others => '0');
-
-		    if encode_en_i = '1' then
-			data_i <= data_vector_i;
-			vector_en <= '1';
-			state <= S_DATA;
-		    else 
-			state <= S_IDLE;               
-		    end if;
+			vector_en <= '0';
+			polar_o_tick <= '0';
+			process_en <= '0';
+			internalcntr <= 0;
+			polar_o <= (others => '0');
+            if encode_en_i = '1' then
+                data_i <= data_vector_i;
+                vector_en <= '1';
+                state <= S_DATA;
+            else 
+                state <= S_IDLE;               
+            end if;
         
         when S_DATA =>
 
             if vector_o_done = '1' then
-                lay1_data_i <= input_vector_o;
+                
                 process_en <= '1';
+                lay1_data_i <= input_vector_o;
+                sys_en_i <= '1';
                 internalcntr <= 0;
                 state <= S_PROCESS;
                 vector_en <= '0';
@@ -189,37 +188,34 @@ P_MAIN : process (clk) begin
                 
                 if internalcntr = 0 then
 
-                    sys_en_i <= '1';
+                    lay2sys_en_i <= '1';
                     lay2_data_i <= lay1_out;
                     internalcntr <= 1;
 
                 elsif internalcntr = 1 then
 
-                    lay2sys_en_i <= '1';
-                    lay2_data_i <= lay1_out;
+                    lay3_sys_en_i <= '1';
+                    lay3_data_i <= lay2_out;
                     internalcntr <= 2;
 
                 elsif internalcntr = 2 then    
 
-                    lay3_sys_en_i <= '1';
-                    lay3_data_i <= lay2_out;
+                    lay_4_sys_en <= '1';
+                    lay_4_data_i <= lay_3_data_o;
                     internalcntr <= 3;
 
                 elsif internalcntr = 3 then
 
-                    lay_4_sys_en <= '1';
-                    lay_4_data_i <= lay_3_data_o;
-                    internalcntr <= 4;
+                    lay_5_sys_en <= '1';
+                    lay_5_data_i <= lay_4_data_o;
+					internalcntr <= 4;
 
                 elsif internalcntr = 4 then
-		    lay_5_sys_en <= '1';
-                    lay_5_data_i <= lay_4_data_o;
-		    internalcntr <= 5;
-					
-		elsif internalcntr = 5 then
-			polar_o <= lay_5_data_o;
-			polar_o_tick <= '1';
+                    
+					polar_o <= lay_5_data_o;
+					polar_o_tick <= '1';
                     state <= S_DONE;
+					
                 end if;
 
             else 
@@ -227,7 +223,7 @@ P_MAIN : process (clk) begin
             end if;
         
         when S_DONE =>
-                sys_en_i <= '0';
+                sys_en_i     <= '0';
                 lay2sys_en_i <= '0';
                 lay3_sys_en_i <= '0';
                 lay_4_sys_en <= '0';
