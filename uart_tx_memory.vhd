@@ -7,12 +7,12 @@ USE std.textio.all;
 
 entity uart_tx_memory is
     generic(
-	c_clkfreq  		: integer := 100_000_000;
-	c_baudrate 		: integer := 115_200;
-	c_stopbitcount          : integer := 2;
+		c_clkfreq  		        : integer := 100_000_000;
+		c_baudrate 		        : integer := 115_200;
+		c_stopbitcount          : integer := 2;
         c_buffer_depth          : integer := 64;
         c_buffer_data_length    : integer := 32;
-        C_RAM_TYPE 		: string  := "block"  
+        C_RAM_TYPE 		        : string 	:= "block"  
 );
 port ( 
         clk            : in  std_logic;
@@ -34,14 +34,14 @@ architecture Behavioral of uart_tx_memory is
         generic(
                 c_clkfreq  		: integer := 100_000_000;
                 c_baudrate 		: integer := 115_200;
-                c_stopbitcount  	: integer := 2
+                c_stopbitcount  : integer := 2
         );
         port( 
-              clk 	       	: in std_logic;
-              tx_data      	: in std_logic_vector(7 downto 0);
-              tx_start     	: in std_logic;
-              tx_o	        : out std_logic; 
-              tx_done_tick 	: out std_logic
+              clk 	       : in std_logic;
+              tx_data      : in std_logic_vector(7 downto 0);
+              tx_start     : in std_logic;
+              tx_o	       : out std_logic; 
+              tx_done_tick : out std_logic
               );
     end component;
 
@@ -52,10 +52,10 @@ type buffer_arr is array (0 to c_buffer_depth -1) of std_logic_vector(c_buffer_d
 signal databuff   : buffer_arr := (others => (others => '0') ) ;
 
 
-signal tx_data          : std_logic_vector(7 downto 0) := (others => '0') ;
-signal tx_start     	: std_logic := '0';
+signal tx_data      : std_logic_vector(7 downto 0) := (others => '0') ;
+signal tx_start     : std_logic := '0';
 signal tx_o	        : std_logic; 
-signal tx_done_tick 	: std_logic;
+signal tx_done_tick : std_logic;
 
 
 attribute ram_style : string;
@@ -94,10 +94,6 @@ begin
 
                     if tx_state_en = '1' then
 
-                        if r_addr = c_buffer_depth-1 then
-                            r_addr <= 0;
-                        end if;
-
                         tx_data <= databuff(r_addr)((txcntr*8)-1 downto (txcntr-1)*8);
                         txcntr <= tx_byte - 1 ;
                         tx_start <= '1';
@@ -112,11 +108,21 @@ begin
                     if txcntr = 0 then 
                         
                         tx_start <= '0';
+
 				    	if tx_done_tick = '1' then
-				    		tx_start <= '0';
-                            txcntr <= tx_byte;
-				    	    state <= S_DONE;
-                            r_addr <= r_addr + 1;
+
+                            if r_addr = c_buffer_depth -1 then
+                                tx_start <= '0';
+                                txcntr <= tx_byte;
+                                state <= S_DONE;
+                                r_addr <= 0;
+                            else 
+                                tx_start <= '0';
+                                txcntr <= tx_byte;
+                                state <= S_DONE;
+                                r_addr <= r_addr + 1;
+                            end if;
+
 				    	else 
 				    		tx_data <= databuff(r_addr)(7 downto 0);
 				    	end if;
@@ -145,13 +151,22 @@ begin
         generic map (
                 c_clkfreq  		=> c_clkfreq,
                 c_baudrate 		=> c_baudrate,
-                c_stopbitcount  	=> c_stopbitcount
+                c_stopbitcount  => c_stopbitcount
         )
         port map( 
               clk 	       => clk,
-              tx_data          => tx_data     ,
-              tx_start         => tx_start    ,
+              tx_data      => tx_data     ,
+              tx_start     => tx_start    ,
               tx_o	       => tx	      , 
-              tx_done_tick     => tx_done_tick
+              tx_done_tick => tx_done_tick
               );
+
+
+ 
+
+
+
+
+
+
 end Behavioral;
