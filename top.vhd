@@ -143,26 +143,26 @@ architecture Behavioral of top is
     signal encode_polar_o         : std_logic_vector(code_length-1 downto 0);
     signal encode_polar_o_tick    : std_logic;
 
-    signal codeword_i :  std_logic_vector(code_length -1 downto 0);
-    signal symbol_out :  int_arr(code_length -1 downto 0);
+    signal codeword_i 			  :  std_logic_vector(code_length -1 downto 0);
+    signal symbol_out 			  :  int_arr(code_length -1 downto 0);
     
-    signal decode_en          : std_logic := '0';
-    signal llr_i              : int_arr(31 downto 0) := (others => 0) ;
-    signal estimate_data      : std_logic_vector(15 downto 0) := (others => '0') ;
-    signal decode_op_done     : std_logic;
+    signal decode_en          	  : std_logic := '0';
+    signal llr_i              	  : int_arr(31 downto 0) := (others => 0) ;
+    signal estimate_data      	  : std_logic_vector(15 downto 0) := (others => '0') ;
+    signal decode_op_done     	  : std_logic;
     
-    signal data_i              : std_logic_vector(c_buffer_data_length-1 downto 0) := (others => '0')  ;
-    signal w_addr              : integer range 0 to c_buffer_depth-1 := 0;
-    signal write_en            : std_logic := '0';
-    signal tx_state_en         : std_logic := '0';
-    signal tx_r_addr           : integer range 0 to c_buffer_depth-1 := 2;
-    signal interrupt           : std_logic := '0';
+    signal data_i                 : std_logic_vector(c_buffer_data_length-1 downto 0) := (others => '0')  ;
+    signal w_addr                 : integer range 0 to c_buffer_depth-1 := 0;
+    signal write_en               : std_logic := '0';
+    signal tx_state_en            : std_logic := '0';
+    signal tx_r_addr              : integer range 0 to c_buffer_depth-1 := 2;
+    signal interrupt              : std_logic := '0';
     
-    signal encode_i_wea        : std_logic;
+    signal encode_i_wea        	  : std_logic;
     
-    signal decode_op_done_cntr   : integer range 0 to c_buffer_depth-1 := 0;
-    signal input_packet_count      : integer range 0 to c_buffer_depth-1 := 0;
-    signal sent_counter        : integer range 0 to c_buffer_depth-1 := 0;
+    signal decode_op_done_cntr    : integer range 0 to c_buffer_depth-1 := 0;
+    signal input_packet_count     : integer range 0 to c_buffer_depth-1 := 0;
+    signal sent_counter        	  : integer range 0 to c_buffer_depth-1 := 0;
 
 
     signal p_decode_en         : std_logic := '0';
@@ -177,11 +177,9 @@ begin
 			if rising_edge(clk) then
 				
 				if  rx_data_available = '1' then
-					encode_i_wea <= '1';
-					input_packet_count <= input_packet_count + 1;
+						encode_i_wea <= '1';
 				else 
-					input_packet_count <= input_packet_count;
-					encode_i_wea <= '0';
+					    encode_i_wea <= '0';
 				end if;
 		
 			end if;
@@ -193,19 +191,22 @@ begin
 		
 				if  encode_i_wea = '1' then
 
-					if input_packet_count = c_buffer_depth then
+					if input_packet_count = c_buffer_depth-1 then
 						encode_data_vector_i <= rx_memory_out;
 						encode_en_i <= '1';
 						rx_data_addr <= 0;
+						input_packet_count <= 0;
 					else 
 						encode_data_vector_i <= rx_memory_out;
 						encode_en_i <= '1';
 						rx_data_addr <= rx_data_addr + 1;
+						input_packet_count <= input_packet_count + 1;
 					end if;
 				else 
-					encode_data_vector_i <= rx_memory_out;
-					encode_en_i <= '0';
-					rx_data_addr <= rx_data_addr;
+						encode_data_vector_i <= rx_memory_out;
+						encode_en_i <= '0';
+						rx_data_addr <= rx_data_addr;
+						input_packet_count <= input_packet_count;
 				end if;
 
 			end if;
@@ -243,14 +244,23 @@ begin
 		P_DECODE_CHECK : process (clk) begin
 			if rising_edge(clk) then
 				
-				
-				if decode_op_done = '1' then
-					write_en <= '1';
-					decode_op_done_cntr <= decode_op_done_cntr + 1;                
-				else 
-					write_en <= '0';
-					decode_op_done_cntr <= decode_op_done_cntr;                
-				end if;
+
+					if decode_op_done = '1' then
+
+						if decode_op_done_cntr = c_buffer_depth-1 then
+							write_en <= '1';
+							decode_op_done_cntr <= 0;
+						else 
+							write_en <= '1';
+							decode_op_done_cntr <= decode_op_done_cntr + 1;    
+						end if;
+            
+					else 
+						write_en <= '0';
+						decode_op_done_cntr <= decode_op_done_cntr;                
+					end if;
+
+
 		
 			end if;
 		end process;
@@ -262,17 +272,20 @@ begin
 				
 				if write_en = '1' then
 
+
+
 					if w_addr = c_buffer_depth -1 then
 						w_addr <= 0;
 						data_i  <= estimate_data;
 					else 
 						data_i  <= estimate_data;
-						w_addr  <= w_addr + 1;
+						w_addr  <= w_addr + 1;						
 					end if;
 	
 				else 
 					data_i   <= estimate_data;
 					w_addr   <= w_addr;
+	
 				end if;
 	
 			end if;
@@ -284,25 +297,39 @@ begin
 		begin
 			if rising_edge(clk) then
 		
-				if  decode_op_done_cntr >= 1 then
-		
-					if interrupt = '1' then
+
+				if decode_op_done_cntr >= 1 then
+					
+					if sent_counter = c_buffer_depth -1 then
+						sent_counter <= 0;
 						tx_state_en <= '0';
-						sent_counter <= sent_counter + 1;
 					else 
-		
-						if sent_counter >= input_packet_count then
+						if interrupt = '1' then
 							tx_state_en <= '0';
-							sent_counter <= sent_counter;
+							sent_counter <= sent_counter + 1;
 						else 
 							tx_state_en <= '1';
-							sent_counter <= sent_counter;
 						end if;
-		
 					end if;
-			
+				else 
+						if sent_counter > decode_op_done_cntr then
+						
+							if sent_counter = c_buffer_depth-1  then
+								sent_counter <= 0;
+								tx_state_en <= '0';
+							else 
+								if interrupt = '1' then
+									tx_state_en <= '0';
+									sent_counter <= sent_counter + 1;
+								else 
+									tx_state_en <= '1';
+									sent_counter <= sent_counter;
+								end if;
+							end if;
+
+						end if;
 				end if;
-		
+
 			end if;
 		end process;
 		
