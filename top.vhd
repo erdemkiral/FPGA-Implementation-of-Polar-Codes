@@ -131,6 +131,18 @@ architecture Behavioral of top is
                 decode_op_done     : out std_logic
     );
     end component;
+
+
+	component awgn_gen is
+		Port ( 
+		
+				clk       : in std_logic;
+				rst       : in std_logic;
+				bpsk_i    : in int_arr(31 downto 0);
+				channel_o : out int_arr(31 downto 0)
+		
+		);
+	end component;
     
     signal rx_data_addr          : integer range 0 to c_buffer_depth-1 := 0;
     -- signal rx_data_request       : std_logic := '0';
@@ -164,9 +176,14 @@ architecture Behavioral of top is
     signal input_packet_count     : integer range 0 to c_buffer_depth-1 := 0;
     signal sent_counter        	  : integer range 0 to c_buffer_depth-1 := 0;
 
+	signal p_awgn_en			  : std_logic := '0';
 
     signal p_decode_en         : std_logic := '0';
 
+
+	-- AWGN 
+	signal bpsk_i    :  int_arr(31 downto 0) := (others => 0) ;
+	signal channel_o :  int_arr(31 downto 0) := (others => 0) ;
 
 
 begin
@@ -218,20 +235,38 @@ begin
 		
 				if encode_polar_o_tick = '1' then
 					codeword_i <= encode_polar_o;
-					llr_i      <= symbol_out;
-					p_decode_en <= '1';
+					bpsk_i      <= symbol_out;
+					p_awgn_en <= '1';
 				else 
-					p_decode_en <= '0';
+					p_awgn_en <= '0';
 				end if;
 		
 			end if;
 		end process;
+
+		P_AWGN : process (clk)
+		begin
+			if rising_edge(clk) then
+
+				if p_awgn_en = '1' then
+
+					p_decode_en <= '1';
+				else 
+					p_decode_en <= '0';
+				end if;
+
+
+			end if;
+		end process;
+
+
 		
 		process (clk)
 		begin
 			if rising_edge(clk) then
 		
 				if p_decode_en = '1' then
+					llr_i 	  <= channel_o;
 					decode_en  <= '1';
 				else 
 					decode_en <= '0';
@@ -411,5 +446,19 @@ begin
 				tx                  => tx_o         ,
 				interrupt           => interrupt      
 		);
+
+
+		i_awgn : awgn_gen 
+			Port map  ( 
+			
+					clk       => clk,
+					rst       => '1',
+					bpsk_i    => bpsk_i,
+					channel_o => channel_o
+			
+			);
+	
+
+
 
 end Behavioral;
