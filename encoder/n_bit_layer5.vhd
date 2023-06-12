@@ -29,7 +29,7 @@ end generate;
 multiple_lay : if layercount > 1 generate
 
         lay5_xors : for i in 0 to c_layercount generate
-            lay_5_data_o(32*i+31 downto 32*i) <= (lay_5_data_i(32*i+31 downto 32*i+16) xor lay_5_data_i(32*i+15 downto 32*i))& lay_5_data_i(32*i+15 downto 32*i) & when lay_5_sys_en = '1' else (others => '0'); 
+            lay_5_data_o(32*i+31 downto 32*i) <= (lay_5_data_i(32*i+31 downto 32*i+16) xor lay_5_data_i(32*i+15 downto 32*i))& lay_5_data_i(32*i+15 downto 32*i) when lay_5_sys_en = '1' else (others => '0'); 
        
         end generate;
 
