@@ -23,8 +23,8 @@ constant bit_positions  : reliability_sequence := (0,1,2,4,8,16,3,5,9,6,17,10,18
 constant frozenbitcount : integer := code_length - data_length;
 
 signal reg_to_input_vector_o  : std_logic_vector(31 downto 0);
-signal cntr  : integer range 0 to 32 := 0;
-signal cntr2 : integer range 0 to 15 := 15;
+signal cntr  : integer range 0 to code_length := 0;
+signal cntr2 : integer range 0 to data_length-1 := data_length-1;
 
 type states is (S_IDLE,S_FREEZE,S_DATA,S_DONE);
 signal state : states := S_IDLE;
@@ -42,7 +42,7 @@ process (clk) begin
             when S_IDLE =>
 
                     vector_o_done <= '0';
-                    cntr2 <= 15;
+                    cntr2 <= data_length-1;
                     cntr <= 0;
                     reg_to_input_vector_o <= (others => '0'); input_vector_o <= (others => '0');
                     if vector_en = '1' then
@@ -61,7 +61,7 @@ process (clk) begin
             when S_DATA =>
 
                     if(cntr = 32) then 
-                        cntr <= 0; cntr2 <= 0; state <= S_DONE; input_vector_o <= reg_to_input_vector_o;
+                        cntr <= 0; cntr2 <= data_length-1; state <= S_DONE; input_vector_o <= reg_to_input_vector_o;
                     else
                         reg_to_input_vector_o(31-bit_positions(cntr)) <= data_i(cntr2);
                         cntr <= cntr + 1;
