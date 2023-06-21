@@ -8,8 +8,8 @@ use work.my_pkg.all;
 
 entity bpsk_symbol_converter is
 generic (
-			code_length : integer := 4
-
+			code_length : integer := 4;
+			bpsk_range  : integer := 512
 );
 port ( 
 			codeword_i : in std_logic_vector(code_length -1 downto 0);
@@ -24,7 +24,7 @@ begin
 
 SYMBOL_GEN : for i in 0 to code_length -1 generate 
 
-			symbol_out(i) <= -1 when codeword_i(i) = '1' else 1;
+			symbol_out(i) <= (-bpsk_range) when codeword_i(i) = '1' else bpsk_range;
 
 end generate SYMBOL_GEN;
 
