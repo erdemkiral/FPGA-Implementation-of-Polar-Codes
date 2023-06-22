@@ -2,7 +2,7 @@ library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 library work;
 use work.my_pkg.all;
-
+use IEEE.NUMERIC_STD.ALL;
 
 
 
@@ -17,7 +17,7 @@ entity top is
         c_buffer_data_length    : integer := 16;
         C_RAM_TYPE 		        : string  := "block";
         -- ENCODER & DECODER
-        bit_range				: integer := 64;
+        bit_range				: integer := 256;
         code_length             : integer := 32; -- default
         data_length             : integer := 16;
         c_layer1number          : integer := 1;
@@ -144,6 +144,27 @@ architecture Behavioral of top is
 		
 		);
 	end component;
+	
+	component awgn_out is
+		Port ( clk,rst,ce : in STD_LOGIC;
+			   divide  : in signed(15 downto 0);
+			   data_out : out signed(15 downto 0)
+			   );
+	end component;
+	
+	
+	
+	signal awgn_rst 	: std_logic  := '0';
+	signal awgn_en 	: std_logic  := '0';
+	signal awgn_div     	 :  signed(15 downto 0) :=   x"0023";
+	signal awgn_o	:   signed(15 downto 0);
+	
+
+	signal   bpsk_i    	:  int_arr(31 downto 0);
+	signal   channel_o :  int_arr(31 downto 0);
+	
+	
+	
     
     signal rx_data_addr          : integer range 0 to c_buffer_depth-1 := 0;
     -- signal rx_data_request       : std_logic := '0';
@@ -177,14 +198,12 @@ architecture Behavioral of top is
     signal input_packet_count     : integer range 0 to c_buffer_depth-1 := 0;
     signal sent_counter        	  : integer range 0 to c_buffer_depth-1 := 0;
 
-	signal p_awgn_en			  : std_logic := '0';
+	signal p_awgn_o_en			  : std_logic := '0';
 
     signal p_decode_en         : std_logic := '0';
 
 
-	-- AWGN 
-	signal bpsk_i    :  int_arr(31 downto 0) := (others => 0) ;
-	signal channel_o :  int_arr(31 downto 0) := (others => 0) ;
+
 
 
 begin
@@ -196,6 +215,7 @@ begin
 				
 				if  rx_data_available = '1' then
 						encode_i_wea <= '1';
+						awgn_rst   <= '1';
 				else 
 					    encode_i_wea <= '0';
 				end if;
@@ -237,26 +257,28 @@ begin
 				if encode_polar_o_tick = '1' then
 					codeword_i <= encode_polar_o;
 					bpsk_i      <= symbol_out;
-					p_awgn_en <= '1';
+					awgn_en <= '1';
+					p_awgn_o_en <= '1';
 				else 
-					p_awgn_en <= '0';
+					p_awgn_o_en  <= '0';
+					awgn_en <= '0';
 				end if;
 		
 			end if;
 		end process;
 
-		P_AWGN : process (clk)
-		begin
+		P_CHANNEL : process (clk)
+			begin
+			
 			if rising_edge(clk) then
-
-				if p_awgn_en = '1' then
-
-					p_decode_en <= '1';
+				
+				if  p_awgn_o_en = '1' then 
+						p_decode_en <= '1';
 				else 
-					p_decode_en <= '0';
-				end if;
-
-
+						p_decode_en <= '0';
+				end  if;
+	
+	
 			end if;
 		end process;
 
@@ -403,25 +425,27 @@ begin
 						polar_o         => encode_polar_o      ,
 						polar_o_tick    => encode_polar_o_tick 
 			);
-		
---			awgn_out_inst: entity work.awgn_out
---			port map (
---			  clk      => clk,
---			  ce       => polar_o_tick,
---			  rst      => rst,
---			  divide   => signed(divider),
---			  data_out => awgndata
---			);
---			i_awgn_gen : awgn_gen 
---           Port map( 
---           
---                   clk      => clk,
---                   rst       => rst,
---                   awgndata  => awgndata,
---                   bpsk_i    => symbol_out,
---                   channel_o  => channel_out
---           
---           );
+			
+			
+			
+	i_awgn_gen : awgn_gen 
+			Port map ( 
+				clk       	 =>  clk,
+				rst       	  => awgn_rst,
+				awgndata       => awgn_o,  	 
+				bpsk_i    	       => bpsk_i    	, 
+				channel_o  => channel_o
+			);
+
+	
+		i_awgn_o  : awgn_out 
+			Port  map ( clk	=>  clk      ,
+				rst			=>  awgn_rst ,
+				ce 			=>  awgn_en  ,
+				   divide  		=> awgn_div       ,
+				   data_out 	=> awgn_o
+				   );
+	
 			
 
 		i_bpsk : bpsk_symbol_converter 
