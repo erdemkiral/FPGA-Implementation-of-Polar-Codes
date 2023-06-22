@@ -362,12 +362,25 @@ begin
 						sent_counter <= 0;
 						tx_state_en <= '0';
 					else 
-						if interrupt = '1' then
+						
+						if	sent_counter    =     decode_op_done_cntr  then 
+						
+							sent_counter    <=   sent_counter;
 							tx_state_en <= '0';
-							sent_counter <= sent_counter + 1;
 						else 
-							tx_state_en <= '1';
-						end if;
+								
+							if interrupt = '1' then
+								tx_state_en <= '0';
+								sent_counter <= sent_counter + 1;
+							else 
+								tx_state_en <= '1';
+							end if;
+								
+								
+						end   if;
+					
+					
+	
 					end if;
 				else 
 						if sent_counter > decode_op_done_cntr then
